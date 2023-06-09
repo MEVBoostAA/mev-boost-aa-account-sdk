@@ -1,1 +1,1 @@
-export { MEVBoostAccountAPI } from "./MEVBoostAccountAPI";
+export * from "./mevboostAccount";
