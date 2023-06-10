@@ -10,6 +10,7 @@ import {
 import {
   MEVBoostAccountFactory,
   MEVBoostAccount__factory,
+  IMEVBoostAccount,
   MEVBoostAccount as MEVBoostAccountImpl,
   MEVBoostAccountFactory__factory,
   MEVBoostPaymaster,
@@ -35,7 +36,7 @@ export class MEVBoostAccount extends UserOperationBuilder {
   private factory: MEVBoostAccountFactory;
   private mevBoostPaymaster: MEVBoostPaymaster;
   private initCode: string;
-  proxy: MEVBoostAccountImpl;
+  private proxy: MEVBoostAccountImpl;
 
   private constructor(
     signer: ethers.Signer,
@@ -122,6 +123,38 @@ export class MEVBoostAccount extends UserOperationBuilder {
   execute(to: string, value: BigNumberish, data: BytesLike) {
     return this.setCallData(
       this.proxy.interface.encodeFunctionData("execute", [to, value, data])
+    );
+  }
+
+  boostExecute(
+    config: IMEVBoostAccount.MEVConfigStruct,
+    to: string,
+    value: BigNumberish,
+    data: BytesLike
+  ) {
+    return this.setCallData(
+      this.proxy.interface.encodeFunctionData("boostExecute", [
+        config,
+        to,
+        value,
+        data,
+      ])
+    );
+  }
+
+  boostExecuteBatch(
+    config: IMEVBoostAccount.MEVConfigStruct,
+    to: Array<string>,
+    value: Array<BigNumberish>,
+    data: Array<BytesLike>
+  ) {
+    return this.setCallData(
+      this.proxy.interface.encodeFunctionData("boostExecuteBatch", [
+        config,
+        to,
+        value,
+        data,
+      ])
     );
   }
 
