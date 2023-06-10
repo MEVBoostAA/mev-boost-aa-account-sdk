@@ -21,9 +21,9 @@ import {
   EntryPoint__factory,
 } from "@account-abstraction/contracts";
 import { MEVBoostAA } from "./constants";
+import { estimateUserOperationGas } from "./middleware/gasLimit";
 
-const { EOASignature, estimateUserOperationGas, getGasPrice } =
-  Presets.Middleware;
+const { EOASignature, getGasPrice } = Presets.Middleware;
 
 export interface IMEVBoostAccountBuilderOpts extends IPresetBuilderOpts {
   mevBoostPaymaster?: string;
@@ -126,6 +126,16 @@ export class MEVBoostAccount extends UserOperationBuilder {
     );
   }
 
+  executeBatch(
+    to: Array<string>,
+    value: Array<BigNumberish>,
+    data: Array<BytesLike>
+  ) {
+    return this.setCallData(
+      this.proxy.interface.encodeFunctionData("executeBatch", [to, value, data])
+    );
+  }
+
   boostExecute(
     config: IMEVBoostAccount.MEVConfigStruct,
     to: string,
@@ -158,13 +168,24 @@ export class MEVBoostAccount extends UserOperationBuilder {
     );
   }
 
-  executeBatch(
-    to: Array<string>,
-    value: Array<BigNumberish>,
-    data: Array<BytesLike>
+  async boostWait(
+    userOpHash: string,
+    deadlineMs?: number,
+    waitIntervalMs: number = 5000
   ) {
-    return this.setCallData(
-      this.proxy.interface.encodeFunctionData("executeBatch", [to, value, data])
-    );
+    const end = deadlineMs || Date.now() + 30000;
+    const block = await this.provider.getBlock("latest");
+    while (Date.now() < end) {
+      const events = await this.mevBoostPaymaster.queryFilter(
+        this.mevBoostPaymaster.filters.SettleUserOp(null, userOpHash),
+        Math.max(0, block.number - 100)
+      );
+      if (events.length > 0) {
+        return events[0];
+      }
+      await new Promise((resolve) => setTimeout(resolve, waitIntervalMs));
+    }
+
+    return null;
   }
 }
