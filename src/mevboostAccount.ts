@@ -21,9 +21,7 @@ import {
   EntryPoint__factory,
 } from "@account-abstraction/contracts";
 import { MEVBoostAA } from "./constants";
-import { estimateUserOperationGas } from "./middleware/gasLimit";
-
-const { EOASignature, getGasPrice } = Presets.Middleware;
+import { estimateUserOperationGas, EOASignature } from "./middleware";
 
 export interface IMEVBoostAccountBuilderOpts extends IPresetBuilderOpts {
   mevBoostPaymaster?: string;
@@ -111,13 +109,15 @@ export class MEVBoostAccount extends UserOperationBuilder {
         ),
       })
       .useMiddleware(instance.resolveAccount)
-      .useMiddleware(getGasPrice(instance.provider));
+      .useMiddleware(Presets.Middleware.getGasPrice(instance.provider));
 
     const withPM = opts?.paymasterMiddleware
       ? base.useMiddleware(opts.paymasterMiddleware)
       : base.useMiddleware(estimateUserOperationGas(instance.provider));
 
-    return withPM.useMiddleware(EOASignature(instance.signer));
+    return withPM.useMiddleware(
+      EOASignature(instance.provider, instance.signer)
+    );
   }
 
   execute(to: string, value: BigNumberish, data: BytesLike) {
