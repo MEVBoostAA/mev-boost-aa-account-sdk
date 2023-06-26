@@ -25,27 +25,33 @@ import { estimateUserOperationGas, EOASignature } from "./middleware";
 
 export interface IMEVBoostAccountBuilderOpts extends IPresetBuilderOpts {
   mevBoostPaymaster?: string;
+  baseEstimateUserOpGas?: (
+    provider: ethers.providers.JsonRpcProvider
+  ) => UserOperationMiddlewareFn;
 }
 
 export class MEVBoostAccount extends UserOperationBuilder {
   private signer: ethers.Signer;
   private provider: ethers.providers.JsonRpcProvider;
-  private entryPoint: EntryPoint;
-  private factory: MEVBoostAccountFactory;
-  private mevBoostPaymaster: MEVBoostPaymaster;
   private initCode: string;
   private proxy: MEVBoostAccountImpl;
+  readonly entryPoint: EntryPoint;
+  readonly factory: MEVBoostAccountFactory;
+  readonly mevBoostPaymaster: MEVBoostPaymaster;
 
   private constructor(
     signer: ethers.Signer,
-    rpcUrl: string,
+    rpcUrlOrProvider: string | ethers.providers.JsonRpcProvider,
     opts?: IMEVBoostAccountBuilderOpts
   ) {
     super();
     this.signer = signer;
-    this.provider = new BundlerJsonRpcProvider(rpcUrl).setBundlerRpc(
-      opts?.overrideBundlerRpc
-    );
+    this.provider =
+      typeof rpcUrlOrProvider == "string"
+        ? new BundlerJsonRpcProvider(rpcUrlOrProvider).setBundlerRpc(
+            opts?.overrideBundlerRpc
+          )
+        : rpcUrlOrProvider;
     this.entryPoint = EntryPoint__factory.connect(
       opts?.entryPoint || Constants.ERC4337.EntryPoint,
       this.provider
@@ -73,10 +79,10 @@ export class MEVBoostAccount extends UserOperationBuilder {
 
   public static async init(
     signer: ethers.Signer,
-    rpcUrl: string,
+    rpcUrlOrProvider: string | ethers.providers.JsonRpcProvider,
     opts?: IMEVBoostAccountBuilderOpts
   ): Promise<MEVBoostAccount> {
-    const instance = new MEVBoostAccount(signer, rpcUrl, opts);
+    const instance = new MEVBoostAccount(signer, rpcUrlOrProvider, opts);
 
     try {
       instance.initCode = await ethers.utils.hexConcat([
@@ -113,11 +119,20 @@ export class MEVBoostAccount extends UserOperationBuilder {
 
     const withPM = opts?.paymasterMiddleware
       ? base.useMiddleware(opts.paymasterMiddleware)
-      : base.useMiddleware(estimateUserOperationGas(instance.provider));
+      : base.useMiddleware(
+          estimateUserOperationGas(
+            instance.provider,
+            opts?.baseEstimateUserOpGas
+          )
+        );
 
     return withPM.useMiddleware(
       EOASignature(instance.provider, instance.signer)
     );
+  }
+
+  async nonce() {
+    return await this.proxy.getNonce();
   }
 
   execute(to: string, value: BigNumberish, data: BytesLike) {

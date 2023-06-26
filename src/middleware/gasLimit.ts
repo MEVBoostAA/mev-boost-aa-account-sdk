@@ -7,9 +7,17 @@ import {
 import { isBoostUserOp } from "../utils";
 
 export const estimateUserOperationGas =
-  (provider: ethers.providers.JsonRpcProvider): UserOperationMiddlewareFn =>
+  (
+    provider: ethers.providers.JsonRpcProvider,
+    baseEstimate?: (
+      provider: ethers.providers.JsonRpcProvider
+    ) => UserOperationMiddlewareFn
+  ): UserOperationMiddlewareFn =>
   async (ctx) => {
-    await Presets.Middleware.estimateUserOperationGas(provider)(ctx);
+    await (baseEstimate || Presets.Middleware.estimateUserOperationGas)(
+      provider
+    )(ctx);
+
     const proxy = MEVBoostAccount__factory.connect(ctx.op.sender, provider);
     if (!isBoostUserOp(provider, ctx)) {
       return;
