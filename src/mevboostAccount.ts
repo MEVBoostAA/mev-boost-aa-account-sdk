@@ -126,6 +126,7 @@ export class MEVBoostAccount extends UserOperationBuilder {
       : base.useMiddleware(
           estimateUserOperationGas(
             instance.provider,
+            instance.mevBoostPaymaster,
             opts?.baseEstimateUserOpGas
           )
         );
