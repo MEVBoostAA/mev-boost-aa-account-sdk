@@ -1,4 +1,5 @@
 import { BigNumberish, BytesLike, ethers } from "ethers";
+import { time } from "@nomicfoundation/hardhat-network-helpers";
 import {
   Constants,
   UserOperationBuilder,
@@ -6,6 +7,8 @@ import {
   Presets,
   IPresetBuilderOpts,
   UserOperationMiddlewareFn,
+  IUserOperation,
+  UserOperationMiddlewareCtx,
 } from "userop";
 import {
   MEVBoostAccountFactory,
@@ -21,6 +24,7 @@ import {
   EntryPoint__factory,
 } from "@account-abstraction/contracts";
 import { MEVBoostAA } from "./constants";
+import { getBoostOpHash, isBoostOp, getBoostOpInfo } from "./utils";
 import { estimateUserOperationGas, EOASignature } from "./middleware";
 
 export interface IMEVBoostAccountBuilderOpts extends IPresetBuilderOpts {
@@ -181,6 +185,53 @@ export class MEVBoostAccount extends UserOperationBuilder {
         data,
       ])
     );
+  }
+
+  userOpHash(op: IUserOperation) {
+    return new UserOperationMiddlewareCtx(
+      op,
+      this.entryPoint.address,
+      this.provider.network.chainId
+    ).getUserOpHash();
+  }
+
+  boostOpHash(op: IUserOperation) {
+    return getBoostOpHash(
+      new UserOperationMiddlewareCtx(
+        op,
+        this.entryPoint.address,
+        this.provider.network.chainId
+      )
+    );
+  }
+
+  isBoostOp(op: IUserOperation) {
+    return isBoostOp(this.provider, op);
+  }
+
+  getBoostOpInfo(op: IUserOperation) {
+    return getBoostOpInfo(this.provider, op);
+  }
+
+  async wait(
+    userOpHash: string,
+    waitTimeoutMs: number = 30000,
+    waitIntervalMs: number = 5000
+  ) {
+    const end = Date.now() + waitTimeoutMs;
+    const block = await this.provider.getBlock("latest");
+    while (Date.now() < end) {
+      const events = await this.entryPoint.queryFilter(
+        this.entryPoint.filters.UserOperationEvent(userOpHash),
+        Math.max(0, block.number - 100)
+      );
+      if (events.length > 0) {
+        return events[0];
+      }
+      await new Promise((resolve) => setTimeout(resolve, waitIntervalMs));
+    }
+
+    return null;
   }
 
   async boostWait(

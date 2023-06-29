@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { UserOperationMiddlewareFn } from "userop";
-import { isBoostUserOp, getBoostOpHash } from "../utils";
+import { isBoostOp, getBoostOpHash } from "../utils";
 
 export const EOASignature =
   (
@@ -10,7 +10,7 @@ export const EOASignature =
   async (ctx) => {
     ctx.op.signature = await signer.signMessage(
       ethers.utils.arrayify(
-        isBoostUserOp(provider, ctx) ? getBoostOpHash(ctx) : ctx.getUserOpHash()
+        isBoostOp(provider, ctx.op) ? getBoostOpHash(ctx) : ctx.getUserOpHash()
       )
     );
   };

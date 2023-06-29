@@ -4,7 +4,7 @@ import {
   MEVBoostAccount__factory,
   MEVBoostPaymaster__factory,
 } from "@mev-boost-aa/contracts";
-import { isBoostUserOp } from "../utils";
+import { isBoostOp } from "../utils";
 
 export const estimateUserOperationGas =
   (
@@ -19,7 +19,7 @@ export const estimateUserOperationGas =
     )(ctx);
 
     const proxy = MEVBoostAccount__factory.connect(ctx.op.sender, provider);
-    if (!isBoostUserOp(provider, ctx)) {
+    if (!isBoostOp(provider, ctx.op)) {
       return;
     }
     const mevBoostPaymaster = MEVBoostPaymaster__factory.connect(
