@@ -6,6 +6,9 @@ import {
   IMEVBoostAccount,
 } from "@mev-boost-aa/contracts";
 
+export const EMPTY_PAYMASTER_AND_DATA_HASH =
+  "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
+
 export const getBoostOpInfo = (
   provider: ethers.providers.JsonRpcProvider,
   op: IUserOperation
@@ -75,7 +78,7 @@ export const getBoostOpHash = (ctx: IUserOperationMiddlewareCtx): string => {
       ctx.op.preVerificationGas,
       ctx.op.maxFeePerGas,
       ctx.op.maxPriorityFeePerGas,
-      ethers.utils.keccak256("0x"),
+      EMPTY_PAYMASTER_AND_DATA_HASH,
     ]
   );
 

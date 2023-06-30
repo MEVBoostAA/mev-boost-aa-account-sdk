@@ -8,9 +8,8 @@ export const EOASignature =
     signer: ethers.Signer
   ): UserOperationMiddlewareFn =>
   async (ctx) => {
-    ctx.op.signature = await signer.signMessage(
-      ethers.utils.arrayify(
-        isBoostOp(provider, ctx.op) ? getBoostOpHash(ctx) : ctx.getUserOpHash()
-      )
-    );
+    const hash = isBoostOp(provider, ctx.op)
+      ? getBoostOpHash(ctx)
+      : ctx.getUserOpHash();
+    ctx.op.signature = await signer.signMessage(ethers.utils.arrayify(hash));
   };

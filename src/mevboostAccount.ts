@@ -188,6 +188,13 @@ export class MEVBoostAccount extends UserOperationBuilder {
     );
   }
 
+  async owner() {
+    if ((await this.nonce()).eq(0)) {
+      return this.signer.getAddress();
+    }
+    return this.proxy.owner();
+  }
+
   userOpHash(op: IUserOperation) {
     return new UserOperationMiddlewareCtx(
       op,
