@@ -1,4 +1,5 @@
-import { BigNumberish, BytesLike, ethers } from "ethers";
+import { BigNumber, BigNumberish, BytesLike, ethers } from "ethers";
+import { TypedDataSigner } from "@ethersproject/abstract-signer";
 import {
   Constants,
   UserOperationBuilder,
@@ -17,6 +18,7 @@ import {
   MEVBoostAccountFactory__factory,
   MEVBoostPaymaster,
   MEVBoostPaymaster__factory,
+  IMEVBoostPaymaster,
 } from "@mev-boost-aa/contracts";
 import {
   EntryPoint,
@@ -185,6 +187,85 @@ export class MEVBoostAccount extends UserOperationBuilder {
     );
   }
 
+  async signMevPayInfo(mevPayInfo: IMEVBoostPaymaster.MEVPayInfoStructOutput) {
+    // All properties on a domain are optional
+    const domain = {
+      name: "MEVBoostPaymaster",
+      version: "v0",
+      chainId: this.provider.network.chainId,
+      verifyingContract: this.mevBoostPaymaster.address,
+    };
+
+    // The named list of all type definitions
+    const types = {
+      MEVPayInfo: [
+        { name: "provider", type: "address" },
+        { name: "boostUserOpHash", type: "bytes32" },
+        { name: "amount", type: "uint256" },
+        { name: "requireSuccess", type: "bool" },
+      ],
+    };
+
+    return await (this.signer as unknown as TypedDataSigner)._signTypedData(
+      domain,
+      types,
+      mevPayInfo
+    );
+  }
+
+  async fillBoostOp(requireSuccess: boolean = true, fillAmount?: BigNumberish) {
+    const userOp = this.getOp();
+    const searcher = await this.signer.getAddress();
+    const { mevConfig } = this.getBoostOpInfo(userOp);
+
+    if (
+      ethers.BigNumber.from(mevConfig.selfSponsoredAfter).lt(
+        await this.blockTimeStamp()
+      )
+    ) {
+      throw "do not need to fill";
+    }
+
+    const { mevPayInfo } = await this.mevBoostPaymaster.getMEVPayInfo(
+      searcher,
+      requireSuccess,
+      userOp
+    );
+
+    fillAmount = fillAmount ?? mevPayInfo.amount;
+
+    if (
+      BigNumber.from(fillAmount).gt(
+        await this.mevBoostPaymaster.balances(searcher)
+      )
+    ) {
+      throw "not enought balance to fill";
+    }
+
+    const signature = await this.signMevPayInfo(mevPayInfo);
+
+    const paymasterAndData = ethers.utils.solidityPack(
+      ["address", "bytes"],
+      [
+        this.mevBoostPaymaster.address,
+        ethers.utils.defaultAbiCoder.encode(
+          ["tuple(address,bytes32,uint256,bool)", "bytes"],
+          [
+            [
+              mevPayInfo.provider,
+              mevPayInfo.boostUserOpHash,
+              fillAmount,
+              requireSuccess,
+            ],
+            signature,
+          ]
+        ),
+      ]
+    );
+    userOp.paymasterAndData = paymasterAndData;
+    return userOp;
+  }
+
   async owner() {
     if ((await this.nonce()).eq(0)) {
       return this.signer.getAddress();
@@ -245,7 +326,7 @@ export class MEVBoostAccount extends UserOperationBuilder {
   }
 
   async boostWait(
-    userOpHash: string,
+    boostOpHash: string,
     deadlineMs?: number,
     waitIntervalMs: number = 5000
   ) {
@@ -253,7 +334,7 @@ export class MEVBoostAccount extends UserOperationBuilder {
     const block = await this.provider.getBlock("latest");
     while (Date.now() < end) {
       const events = await this.mevBoostPaymaster.queryFilter(
-        this.mevBoostPaymaster.filters.SettleUserOp(null, userOpHash),
+        this.mevBoostPaymaster.filters.SettleUserOp(null, boostOpHash),
         Math.max(0, block.number - 100)
       );
       if (events.length > 0) {

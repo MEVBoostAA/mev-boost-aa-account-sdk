@@ -26,7 +26,15 @@ const getPaymasterAndDataForEstimate = (
       mevBoostPaymaster.address,
       ethers.utils.defaultAbiCoder.encode(
         ["tuple(address,bytes32,uint256,bool)", "bytes"],
-        [mevPayInfo, MEVBoostAA.MagicSignature]
+        [
+          [
+            mevPayInfo.provider,
+            mevPayInfo.boostUserOpHash,
+            mevPayInfo.amount,
+            mevPayInfo.requireSuccess,
+          ],
+          MEVBoostAA.MagicSignature,
+        ]
       ),
     ]
   );
@@ -73,7 +81,7 @@ export const estimateUserOperationGas =
     }
 
     const ctxForEstimate = getCtxForEstimate(ctx, mevBoostPaymaster);
-    await estimate(provider)(ctx);
+    await estimate(provider)(ctxForEstimate);
     ctx.op.callGasLimit = ctxForEstimate.op.callGasLimit;
     ctx.op.verificationGasLimit = ctxForEstimate.op.verificationGasLimit;
     ctx.op.preVerificationGas = ctxForEstimate.op.preVerificationGas;

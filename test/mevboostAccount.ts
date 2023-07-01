@@ -22,6 +22,7 @@ describe("mevBoostAccount test", () => {
   let entryPoint: EntryPoint;
   beforeEach(async () => {
     entryPoint = await new EntryPoint__factory().connect(signer).deploy();
+    signer._signTypedData;
     mevBoostAccountFactory = await new MEVBoostAccountFactory__factory()
       .connect(signer)
       .deploy(entryPoint.address);
@@ -42,6 +43,9 @@ describe("mevBoostAccount test", () => {
     expect(await ethers.provider.getBalance(mevBoostAccount.getSender())).to.eq(
       value
     );
+    mevBoostPaymaster
+      .connect(signer)
+      .deposit(signer.getAddress(), { value: ethers.utils.parseEther("50") });
   });
 
   it("init mevboost account", async () => {
@@ -136,5 +140,29 @@ describe("mevBoostAccount test", () => {
     await expect(
       entryPoint.connect(signer).handleOps([userOp], signer.getAddress())
     ).to.be.reverted;
+  });
+
+  it("init mevboost account and boostExecuteBatch suceess with filled boostOp", async () => {
+    const receiver = ethers.Wallet.createRandom();
+    const value = ethers.utils.parseEther("1");
+    const timestamp = await mevBoostAccount.blockTimeStamp();
+    const selfSponsoredAfter = timestamp + 3600;
+    mevBoostAccount.boostExecuteBatch(
+      { minAmount: ethers.utils.parseEther("1"), selfSponsoredAfter },
+      [receiver.address],
+      [value],
+      ["0x"]
+    );
+
+    let userOp = await mevBoostAccount.buildOp(
+      entryPoint.address,
+      ethers.provider.network.chainId
+    );
+
+    userOp = await mevBoostAccount.fillBoostOp();
+
+    await entryPoint.connect(signer).handleOps([userOp], signer.getAddress());
+
+    await mevBoostAccount.boostWait(mevBoostAccount.boostOpHash(userOp));
   });
 });

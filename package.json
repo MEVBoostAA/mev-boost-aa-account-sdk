@@ -42,7 +42,7 @@
   "dependencies": {
     "@account-abstraction/contracts": "^0.6.0",
     "@mev-boost-aa/contracts": "^3.1.8",
-    "ethers": "^5.4.7",
+    "ethers": "5.7.2",
     "userop": "^0.3.0"
   }
 }
