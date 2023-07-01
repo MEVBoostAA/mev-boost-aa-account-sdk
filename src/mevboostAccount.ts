@@ -1,5 +1,4 @@
 import { BigNumberish, BytesLike, ethers } from "ethers";
-import { time } from "@nomicfoundation/hardhat-network-helpers";
 import {
   Constants,
   UserOperationBuilder,
@@ -114,9 +113,7 @@ export class MEVBoostAccount extends UserOperationBuilder {
     const base = instance
       .useDefaults({
         sender: instance.proxy.address,
-        signature: await instance.signer.signMessage(
-          ethers.utils.arrayify(ethers.utils.keccak256("0xdead"))
-        ),
+        signature: MEVBoostAA.MagicSignature,
       })
       .useMiddleware(instance.resolveAccount)
       .useMiddleware(Presets.Middleware.getGasPrice(instance.provider));
