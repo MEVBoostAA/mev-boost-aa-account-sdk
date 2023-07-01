@@ -421,10 +421,10 @@
     tweetnacl "^1.0.3"
     tweetnacl-util "^0.15.1"
 
-"@mev-boost-aa/contracts@^3.1.7":
-  version "3.1.7"
-  resolved "https://registry.yarnpkg.com/@mev-boost-aa/contracts/-/contracts-3.1.7.tgz#4324b8e6b19103a127591e2f9b9f059742715f7e"
-  integrity sha512-a5VlfGX6InLdUNRGebMeOiypTRdr2CbGZ5Lj6HuKPfvsCVtZ6hL1t+BFrVFjgYJ4ojIo5x/61mXD8HY0UcqI1A==
+"@mev-boost-aa/contracts@^3.1.8":
+  version "3.1.8"
+  resolved "https://registry.yarnpkg.com/@mev-boost-aa/contracts/-/contracts-3.1.8.tgz#e08b89b0c15cc68924318d424a7af4d0a3c24baf"
+  integrity sha512-XehDcN8H2s1Y2b8HduGAi/x8Wts9gOI84l9Z4BbnqLnKkjQmKdfJRA5aP4FumNCZ68CEVAfW5nZns2UfSJ0u+Q==
 
 "@morgan-stanley/ts-mocking-bird@^0.6.2":
   version "0.6.4"

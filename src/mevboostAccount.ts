@@ -221,6 +221,11 @@ export class MEVBoostAccount extends UserOperationBuilder {
     return getBoostOpInfo(this.provider, op);
   }
 
+  async blockTimeStamp() {
+    const latestBlock = await this.provider.getBlock("latest");
+    return latestBlock.timestamp;
+  }
+
   async wait(
     userOpHash: string,
     waitTimeoutMs: number = 30000,

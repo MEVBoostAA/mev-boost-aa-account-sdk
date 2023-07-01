@@ -93,12 +93,13 @@ describe("mevBoostAccount test", () => {
     expect(await ethers.provider.getBalance(receiver.address)).to.eq(value);
   });
 
-  it("init mevboost account and boostExecuteBatch", async () => {
+  it("init mevboost account and boostExecuteBatch success with unfilled boostOp", async () => {
     const receiver = ethers.Wallet.createRandom();
     const value = ethers.utils.parseEther("1");
-
+    const timestamp = await mevBoostAccount.blockTimeStamp();
+    const selfSponsoredAfter = timestamp + 3600;
     mevBoostAccount.boostExecuteBatch(
-      { minAmount: 0, selfSponsoredAfter: 0 },
+      { minAmount: 0, selfSponsoredAfter },
       [receiver.address],
       [value],
       ["0x"]
@@ -109,8 +110,31 @@ describe("mevBoostAccount test", () => {
       ethers.provider.network.chainId
     );
 
+    await time.increaseTo(selfSponsoredAfter);
+
     await entryPoint.connect(signer).handleOps([userOp], signer.getAddress());
 
     expect(await ethers.provider.getBalance(receiver.address)).to.eq(value);
+  });
+
+  it("init mevboost account and boostExecuteBatch fail with unfilled boostOp", async () => {
+    const receiver = ethers.Wallet.createRandom();
+    const value = ethers.utils.parseEther("1");
+    const timestamp = await mevBoostAccount.blockTimeStamp();
+    const selfSponsoredAfter = timestamp + 3600;
+    mevBoostAccount.boostExecuteBatch(
+      { minAmount: 0, selfSponsoredAfter },
+      [receiver.address],
+      [value],
+      ["0x"]
+    );
+
+    const userOp = await mevBoostAccount.buildOp(
+      entryPoint.address,
+      ethers.provider.network.chainId
+    );
+    await expect(
+      entryPoint.connect(signer).handleOps([userOp], signer.getAddress())
+    ).to.be.reverted;
   });
 });
