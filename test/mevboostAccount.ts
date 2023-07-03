@@ -147,8 +147,9 @@ describe("mevBoostAccount test", () => {
     const value = ethers.utils.parseEther("1");
     const timestamp = await mevBoostAccount.blockTimeStamp();
     const selfSponsoredAfter = timestamp + 3600;
+    const mevAmount = ethers.utils.parseEther("1");
     mevBoostAccount.boostExecuteBatch(
-      { minAmount: ethers.utils.parseEther("1"), selfSponsoredAfter },
+      { minAmount: mevAmount, selfSponsoredAfter },
       [receiver.address],
       [value],
       ["0x"]
@@ -164,5 +165,11 @@ describe("mevBoostAccount test", () => {
     await entryPoint.connect(signer).handleOps([userOp], signer.getAddress());
 
     await mevBoostAccount.boostWait(mevBoostAccount.boostOpHash(userOp));
+
+    const receivedMEV = await mevBoostAccount.mevBoostPaymaster.balances(
+      mevBoostAccount.getSender()
+    );
+
+    expect(receivedMEV).to.eq(mevAmount);
   });
 });

@@ -1,23 +1,4 @@
-# mev-boost-aa-account-sdk
-
-The account sdk of MEVBoostAA is built upon [userOp.js](https://docs.stackup.sh/docs/useropjs) of stackup.
-
-## Dependecies
-
-`ethers`: "5.7.2"
-
-`userop`: "^0.3.0"
-
-## Install
-
-```
-npm i @mev-boost-aa/account-sdk
-```
-
-## Demo
-
-```typescript
-import { MEVBoostAccount } from "@mev-boost-aa/account-sdk";
+import { MEVBoostAccount } from "../src/index";
 import { BigNumberish, BytesLike, ethers } from "ethers";
 import { Client } from "userop";
 
@@ -94,10 +75,3 @@ async function demo(
   ev = await res.wait();
   console.log(`Transaction hash: ${ev?.transactionHash ?? null}`);
 }
-```
-
-## Tests
-
-```
-npm test
-```

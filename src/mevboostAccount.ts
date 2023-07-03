@@ -327,10 +327,13 @@ export class MEVBoostAccount extends UserOperationBuilder {
 
   async boostWait(
     boostOpHash: string,
-    deadlineMs?: number,
+    deadlineSecond?: BigNumberish,
     waitIntervalMs: number = 5000
   ) {
-    const end = deadlineMs || Date.now() + 30000;
+    let end = Date.now() + 30000;
+    if (deadlineSecond) {
+      end = BigNumber.from(deadlineSecond).toNumber();
+    }
     const block = await this.provider.getBlock("latest");
     while (Date.now() < end) {
       const events = await this.mevBoostPaymaster.queryFilter(
